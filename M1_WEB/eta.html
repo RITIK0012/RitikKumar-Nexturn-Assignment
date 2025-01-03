@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Tracker</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(to right, #ff7e5f, #feb47b);
+            margin: 0;
+            padding: 0;
+            color: #fff;
+        }
+        .container {
+            width: 80%;
+            margin: auto;
+            max-width: 1200px;
+        }
+        h1 {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 2.5em;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .form-container {
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            margin-top: 30px;
+        }
+        .form-container input, .form-container select, .form-container button {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border: 1px solid #fff;
+            background-color: rgba(255, 255, 255, 0.2);
+            color: #fff;
+            font-size: 1.1em;
+        }
+        .form-container input, .form-container select {
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+        .form-container button {
+            background-color: black;
+            color: white;
+            cursor: pointer;
+            border: none;
+            font-weight: bold;
+        }
+        .form-container button:hover {
+            background-color: #218838;
+        }
+        .expense-table {
+            width: 100%;
+            margin-top: 30px;
+            border-collapse: collapse;
+        }
+        .expense-table th, .expense-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        .expense-table th {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        .category-badge {
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+        }
+        .category-food {
+            background-color: #ff5733;
+        }
+        .category-shopping {
+            background-color: #ffbb33;
+        }
+        .category-travel {
+            background-color: #33aaff;
+        }
+        .category-other {
+            background-color: #777;
+        }
+        .expense-list {
+            margin-top: 30px;
+        }
+        .no-expenses {
+            text-align: center;
+            font-size: 1.5em;
+            margin-top: 20px;
+            color: #ccc;
+        }
+        #expense-chart {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 40px;
+            width: 100%;
+            height: 300px;
+        }
+        @media (max-width: 768px) {
+            .container {
+                width: 90%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Expense Tracker</h1>
+
+    <!-- Form to add new expense -->
+    <div class="form-container">
+        <input type="number" id="expense-amount" placeholder="Amount" required>
+        <input type="text" id="expense-description" placeholder="Description" required>
+        <select id="expense-category">
+            <option value="Food">Food</option>
+            <option value="Shopping">Shopping</option>
+            <option value="Travel">Travel</option>
+            <option value="Other">Other</option>
+        </select>
+        <button id="add-expense">Add Expense</button>
+    </div>
+
+    <!-- Expense Table -->
+    <table class="expense-table" id="expense-table">
+        <thead>
+            <tr>
+                <th>Amount</th>
+                <th>Description</th>
+                <th>Category</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="expense-list">
+            <tr class="no-expenses" id="no-expenses">
+                <td colspan="4">No expenses added.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- Pie Chart to visualize expenses by category -->
+    <div id="expense-chart">
+        <canvas id="expensePieChart"></canvas>
+    </div>
+</div>
+
+<script>
+    const addExpenseButton = document.getElementById('add-expense');
+    const expenseTable = document.getElementById('expense-list');
+    const noExpensesMessage = document.getElementById('no-expenses');
+    const expenseAmountInput = document.getElementById('expense-amount');
+    const expenseDescriptionInput = document.getElementById('expense-description');
+    const expenseCategorySelect = document.getElementById('expense-category');
+    const expensePieChart = document.getElementById('expensePieChart');
+
+    const loadExpenses = () => {
+        const expenses = JSON.parse(localStorage.getItem('expenses')) || [];
+        expenses.forEach(expense => addExpenseToTable(expense));
+        updatePieChart();
+    };
+
+    const saveExpenses = (expenses) => {
+        localStorage.setItem('expenses', JSON.stringify(expenses));
+    };
+
+    const updatePieChart = () => {
+        const expenses = JSON.parse(localStorage.getItem('expenses')) || [];
+        let foodTotal = 0, shoppingTotal = 0, travelTotal = 0, otherTotal = 0;
+
+        expenses.forEach(expense => {
+            switch (expense.category) {
+                case 'Food': foodTotal += expense.amount; break;
+                case 'Shopping': shoppingTotal += expense.amount; break;
+                case 'Travel': travelTotal += expense.amount; break;
+                case 'Other': otherTotal += expense.amount; break;
+            }
+        });
+
+        const data = {
+            
+            datasets: [{
+                data: [foodTotal, shoppingTotal, travelTotal, otherTotal],
+                backgroundColor: ['#ff5733', '#ffbb33', '#33aaff', '#777'],
+                borderColor: ['#fff', '#fff', '#fff', '#fff'],
+                borderWidth: 2
+            }]
+        };
+
+        const config = {
+            type: 'pie',
+            data: data,
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: (tooltipItem) => {
+                                return tooltipItem.label + ': $' + tooltipItem.raw;
+                            }
+                        }
+                    }
+                }
+            }
+        };
+        new Chart(expensePieChart, config);
+    };
+
+    const addExpenseToTable = (expense) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>$${expense.amount}</td>
+            <td>${expense.description}</td>
+            <td><span class="category-badge category-${expense.category.toLowerCase()}">${expense.category}</span></td>
+            <td><button class="delete-expense" onclick="deleteExpense('${expense.id}')">Delete</button></td>
+        `;
+        expenseTable.appendChild(row);
+        noExpensesMessage.style.display = 'none';
+    };
+
+    const deleteExpense = (expenseId) => {
+        let expenses = JSON.parse(localStorage.getItem('expenses')) || [];
+        expenses = expenses.filter(expense => expense.id !== expenseId);
+        saveExpenses(expenses);
+        loadExpenses();
+    };
+
+    addExpenseButton.addEventListener('click', () => {
+        const amount = parseFloat(expenseAmountInput.value);
+        const description = expenseDescriptionInput.value.trim();
+        const category = expenseCategorySelect.value;
+
+        if (amount > 0 && description) {
+            const newExpense = {
+                id: new Date().toISOString(),
+                amount,
+                description,
+                category
+            };
+            let expenses = JSON.parse(localStorage.getItem('expenses')) || [];
+            expenses.push(newExpense);
+            saveExpenses(expenses);
+
+            addExpenseToTable(newExpense);
+            updatePieChart();
+            expenseAmountInput.value = '';
+            expenseDescriptionInput.value = '';
+        } else {
+            alert('Please provide valid inputs.');
+        }
+    });
+
+    loadExpenses();
+</script>
+
+</body>
+</html>

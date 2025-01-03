@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To-Do List</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .todo-container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+        }
+        .todo-container h1 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+        input[type="text"] {
+            width: 70%;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            margin-bottom: 15px;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #28a745;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        ol {
+            margin-top: 20px;
+            padding: 0;
+            list-style-type: none;
+            text-align: center;
+        }
+        li {
+            margin: 10px 0;
+            padding: 10px;
+            background: #f9f9f9;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .task-text {
+            flex: 1;
+            text-align: left;
+        }
+        #no-tasks {
+            color: #888;
+            display: inline-block;
+        }
+        .task-count {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #555;
+        }
+        .edit-task, .delete-task {
+            margin-left: 10px;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+        .edit-task {
+            background-color: #007bff;
+        }
+        .edit-task:hover {
+            background-color: #0056b3;
+        }
+        .delete-task {
+            background-color: #dc3545;
+        }
+        .delete-task:hover {
+            background-color: #c82333;
+        }
+        /* Style for completed tasks */
+        .completed .task-text {
+            text-decoration: line-through;
+            color: #888;
+        }
+        .completed {
+            background-color: #e9ecef;
+        }
+    </style>
+</head>
+<body>
+
+<div class="todo-container">
+    <h1>To-Do List</h1>
+    <input type="text" id="new-task" placeholder="Add a new task...">
+    <button id="add-task">Add Task</button>
+    <ol id="task-list">
+        <li id="no-tasks">No tasks.</li>
+    </ol>
+    <div class="task-count">Pending tasks: <span id="pending-count">0</span></div>
+</div>
+
+<script>
+    const taskList = document.getElementById('task-list');
+    const pendingCountElement = document.getElementById('pending-count');
+    const noTasksMessage = document.getElementById('no-tasks');
+
+    const loadTasks = () => {
+        const tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+        tasks.forEach(task => addTaskToDOM(task.text, task.completed));
+        updatePendingCount();
+    };
+
+    const saveTasks = () => {
+        const tasks = Array.from(taskList.children)
+            .filter(task => task !== noTasksMessage)
+            .map(task => ({
+                text: task.querySelector('.task-text').textContent,
+                completed: task.classList.contains('completed')
+            }));
+        localStorage.setItem('tasks', JSON.stringify(tasks));
+    };
+
+    const updatePendingCount = () => {
+        const tasks = Array.from(taskList.children).filter(task => task !== noTasksMessage);
+        const pendingCount = tasks.filter(task => !task.classList.contains('completed')).length;
+        pendingCountElement.textContent = pendingCount;
+    };
+
+    const addTaskToDOM = (taskText, completed = false) => {
+        const newTask = document.createElement('li');
+        if (completed) newTask.classList.add('completed');
+
+        const textSpan = document.createElement('span');
+        textSpan.textContent = taskText;
+        textSpan.className = 'task-text';
+        newTask.appendChild(textSpan);
+
+        const buttonsContainer = document.createElement('div');
+        buttonsContainer.style.display = 'flex';
+        buttonsContainer.style.gap = '5px';
+
+        const editButton = document.createElement('button');
+        editButton.textContent = 'Edit';
+        editButton.className = 'edit-task';
+        editButton.addEventListener('click', (event) => {
+            event.stopPropagation();
+            const newText = prompt('Edit your task:', textSpan.textContent);
+            if (newText) {
+                textSpan.textContent = newText;
+                saveTasks();
+            }
+        });
+        buttonsContainer.appendChild(editButton);
+
+        const deleteButton = document.createElement('button');
+        deleteButton.textContent = 'Delete';
+        deleteButton.className = 'delete-task';
+        deleteButton.addEventListener('click', (event) => {
+            event.stopPropagation();
+            newTask.remove();
+            saveTasks();
+            if (taskList.children.length === 0) {
+                taskList.appendChild(noTasksMessage);
+            }
+            updatePendingCount();
+        });
+        buttonsContainer.appendChild(deleteButton);
+
+        // Add a click event to toggle completion
+        newTask.addEventListener('click', () => {
+            newTask.classList.toggle('completed');
+            saveTasks();
+            updatePendingCount(); // Update the count on completion toggle
+        });
+
+        newTask.appendChild(buttonsContainer);
+
+        if (noTasksMessage.parentElement) {
+            noTasksMessage.remove();
+        }
+
+        taskList.appendChild(newTask);
+        updatePendingCount();
+    };
+
+    document.getElementById('add-task').addEventListener('click', () => {
+        const taskText = document.getElementById('new-task').value.trim();
+        if (taskText) {
+            addTaskToDOM(taskText);
+            saveTasks();
+            document.getElementById('new-task').value = '';
+        }
+    });
+
+    loadTasks();
+</script>
+
+</body>
+</html>
