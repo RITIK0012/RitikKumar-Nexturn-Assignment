@@ -1,0 +1,28 @@
+Git Repo Link : https://github.com/RITIK0012/RitikKumar-Nexturn-Github
+# Initial Setup
+cd path/to/RitikKumar_Github
+echo "# RitikKumar-Nexturn-Github" >> README.md
+git init
+git add README.md
+git commit -m "first commit"
+git branch -M main
+git remote add origin https://github.com/RITIK0012/RitikKumar-Nexturn-Github.git
+git push -u origin main
+
+# Create and Push a Feature Branch
+git checkout -b feature/update-readme
+# Edit README.md and save
+git add README.md
+git commit -m "Update README.md with project description"
+git push -u origin feature/update-readme
+
+# Merge via Pull Request on GitHub
+# (Go to GitHub, create a pull request, and merge it)
+
+# Pull Merged Changes Locally
+git checkout main
+git pull origin main
+
+# Cleanup
+git branch -d feature/update-readme
+git fetch --prune
